@@ -1,38 +1,40 @@
-import {HTML5Video, Log, Events, PlayerError} from 'clappr'
+import {Events, HTML5Video, Log, PlayerError} from 'clappr'
 import shaka from 'shaka-player'
 
 const SEND_STATS_INTERVAL_MS = 30 * 1e3
 const DEFAULT_LEVEL_AUTO = -1
 
 class DashShakaPlayback extends HTML5Video {
-  static get Events () {
+  static get Events() {
     return {
       SHAKA_READY: 'shaka:ready'
     }
   }
 
-  static get shakaPlayer() { return shaka }
+  static get shakaPlayer() {
+    return shaka
+  }
 
-  static canPlay (resource, mimeType = '') {
+  static canPlay(resource, mimeType = '') {
     shaka.polyfill.installAll()
     let browserSupported = shaka.Player.isBrowserSupported()
     let resourceParts = resource.split('?')[0].match(/.*\.(.*)$/) || []
     return browserSupported && ((resourceParts[1] === 'mpd') || mimeType.indexOf('application/dash+xml') > -1)
   }
 
-  get name () {
+  get name() {
     return 'dash_shaka_playback'
   }
 
-  get shakaVersion () {
-    return shaka.player.Player.version
+  get shakaVersion() {
+    return shaka.Player.version
   }
 
-  get shakaPlayerInstance () {
+  get shakaPlayerInstance() {
     return this._player
   }
 
-  get levels () {
+  get levels() {
     return this._levels
   }
 
@@ -40,7 +42,7 @@ class DashShakaPlayback extends HTML5Video {
     return this.shakaPlayerInstance.seekRange()
   }
 
-  set currentLevel (id) {
+  set currentLevel(id) {
     this._currentLevelId = id
     let isAuto = this._currentLevelId === DEFAULT_LEVEL_AUTO
 
@@ -49,14 +51,13 @@ class DashShakaPlayback extends HTML5Video {
       this._player.configure({abr: {enabled: false}})
       this._pendingAdaptationEvent = true
       this.selectTrack(this.videoTracks.filter((t) => t.id === this._currentLevelId)[0])
-    }
-    else {
+    } else {
       this._player.configure({abr: {enabled: true}})
       this.trigger(Events.PLAYBACK_LEVEL_SWITCH_END)
     }
   }
 
-  get currentLevel () {
+  get currentLevel() {
     return this._currentLevelId || DEFAULT_LEVEL_AUTO
   }
 
@@ -91,7 +92,7 @@ class DashShakaPlayback extends HTML5Video {
     return this.shakaPlayerInstance.getStats().estimatedBandwidth
   }
 
-  constructor (...args) {
+  constructor(...args) {
     super(...args)
     this._levels = []
     this._pendingAdaptationEvent = false
@@ -106,7 +107,7 @@ class DashShakaPlayback extends HTML5Video {
 
   _updateDvr(status) {
     this.trigger(Events.PLAYBACK_DVR, status)
-    this.trigger(Events.PLAYBACK_STATS_ADD, { 'dvr': status })
+    this.trigger(Events.PLAYBACK_STATS_ADD, {'dvr': status})
   }
 
   seek(time) {
@@ -115,7 +116,7 @@ class DashShakaPlayback extends HTML5Video {
       time = this._duration
     }
     // assume live if time within 3 seconds of end of stream
-    this.dvrEnabled && this._updateDvr(time < this._duration-3)
+    this.dvrEnabled && this._updateDvr(time < this._duration - 3)
     time += this._startTime
     super.seek(time)
   }
@@ -127,7 +128,7 @@ class DashShakaPlayback extends HTML5Video {
       this._updateDvr(true)
   }
 
-  play () {
+  play() {
     if (!this._player) {
       this._setup()
     }
@@ -180,10 +181,11 @@ class DashShakaPlayback extends HTML5Video {
   }
 
   // skipping HTML5Video `_setupSrc` (on tag video)
-  _setupSrc () {}
+  _setupSrc() {
+  }
 
   // skipping ready event on video tag in favor of ready on shaka
-  _ready () {
+  _ready() {
     // override with no-op
   }
 
@@ -193,20 +195,20 @@ class DashShakaPlayback extends HTML5Video {
     this.trigger(Events.PLAYBACK_READY, this.name)
   }
 
-  get isReady () {
+  get isReady() {
     return this._isShakaReadyState
   }
 
   // skipping error handling on video tag in favor of error on shaka
-  error (event) {
+  error(event) {
     Log.error('an error was raised by the video tag', event, this.el.error)
   }
 
-  isHighDefinitionInUse () {
+  isHighDefinitionInUse() {
     return !!this.highDefinition
   }
 
-  stop () {
+  stop() {
     this._stopTimeUpdateTimer()
     clearInterval(this.sendStatsId)
     this._stopped = true
@@ -226,23 +228,23 @@ class DashShakaPlayback extends HTML5Video {
     }
   }
 
-  get textTracks () {
+  get textTracks() {
     return this.isReady && this._player.getTextTracks()
   }
 
-  get audioTracks () {
+  get audioTracks() {
     return this.isReady && this._player.getVariantTracks().filter((t) => t.mimeType.startsWith('audio/'))
   }
 
-  get videoTracks () {
+  get videoTracks() {
     return this.isReady && this._player.getVariantTracks().filter((t) => t.mimeType.startsWith('video/'))
   }
 
-  getPlaybackType () {
+  getPlaybackType() {
     return (this.isReady && this._player.isLive() ? 'live' : 'vod') || ''
   }
 
-  selectTrack (track) {
+  selectTrack(track) {
     if (track.type === 'text') {
       this._player.selectTextTrack(track)
     } else if (track.type === 'variant') {
@@ -262,12 +264,16 @@ class DashShakaPlayback extends HTML5Video {
    */
   get closedCaptionsTracks() {
     let id = 0
-    let trackId = () => { return id++ }
+    let trackId = () => {
+      return id++
+    }
     let tracks = this.textTracks || []
 
     return tracks
       .filter(track => track.kind === 'subtitle')
-      .map(track => { return {id: trackId(), name: track.label || track.language, track: track} })
+      .map(track => {
+        return {id: trackId(), name: track.label || track.language, track: track}
+      })
   }
 
   /**
@@ -343,7 +349,7 @@ class DashShakaPlayback extends HTML5Video {
     this._ccIsSetup = true
   }
 
-  destroy () {
+  destroy() {
     this._stopTimeUpdateTimer()
     clearInterval(this.sendStatsId)
 
@@ -361,7 +367,11 @@ class DashShakaPlayback extends HTML5Video {
     super.destroy()
   }
 
-  _setup () {
+  _setup() {
+    // console.log('Iniciando Shaka')
+    // console.log(shaka)
+    // console.log(this.shakaVersion)
+
     this._isShakaReadyState = false
     this._ccIsSetup = false
     this._player = this._createPlayer()
@@ -373,7 +383,7 @@ class DashShakaPlayback extends HTML5Video {
       .catch((e) => this._setupError(e))
   }
 
-  _createPlayer () {
+  _createPlayer() {
     let player = new shaka.Player(this.el)
     player.addEventListener('error', this._onError.bind(this))
     player.addEventListener('adaptation', this._onAdaptation.bind(this))
@@ -400,7 +410,8 @@ class DashShakaPlayback extends HTML5Video {
   }
 
   // skipping HTML5 `_handleBufferingEvents` in favor of shaka buffering events
-  _handleBufferingEvents() {}
+  _handleBufferingEvents() {
+  }
 
   _handleShakaBufferingEvents(e) {
     if (this._stopped) return
@@ -409,7 +420,7 @@ class DashShakaPlayback extends HTML5Video {
     this._isBuffering ? this._onBuffering() : this._onBufferfull()
   }
 
-  _onBuffering () {
+  _onBuffering() {
     this.trigger(Events.PLAYBACK_BUFFERING)
   }
 
@@ -419,40 +430,42 @@ class DashShakaPlayback extends HTML5Video {
     if (this.isPlaying()) this._onPlaying()
   }
 
-  _loaded () {
+  _loaded() {
     this._onShakaReady()
     this._startToSendStats()
     this._fillLevels()
     this._checkForClosedCaptions()
   }
 
-  _fillLevels () {
+  _fillLevels() {
     if (this._levels.length === 0) {
-      this._levels = this.videoTracks.map((videoTrack) => { return {id: videoTrack.id, label: `${videoTrack.height}p`} }).reverse()
+      this._levels = this.videoTracks.map((videoTrack) => {
+        return {id: videoTrack.id, label: `${videoTrack.height}p`}
+      }).reverse()
       this.trigger(Events.PLAYBACK_LEVELS_AVAILABLE, this.levels)
     }
   }
 
-  _startToSendStats () {
+  _startToSendStats() {
     const intervalMs = this._options.shakaSendStatsInterval || SEND_STATS_INTERVAL_MS
     this.sendStatsId = setInterval(() => this._sendStats(), intervalMs)
   }
 
-  _sendStats () {
+  _sendStats() {
     this.trigger(Events.PLAYBACK_STATS_ADD, this._player.getStats())
   }
 
-  _setupError (err) {
+  _setupError(err) {
     this._onError(err)
   }
 
-  _onError (err) {
+  _onError(err) {
     const error = {
       shakaError: err,
       videoError: this.el.error
     }
 
-    let { category, code, severity } = error.shakaError.detail || error.shakaError
+    let {category, code, severity} = error.shakaError.detail || error.shakaError
 
     if (error.videoError || !code && !category) return super._onError()
 
@@ -469,7 +482,7 @@ class DashShakaPlayback extends HTML5Video {
   }
 
 
-  _onAdaptation () {
+  _onAdaptation() {
     let activeVideo = this.videoTracks.filter((t) => t.active === true)[0]
 
     this._fillLevels()
@@ -507,7 +520,7 @@ class DashShakaPlayback extends HTML5Video {
     this.trigger(Events.PLAYBACK_SETTINGSUPDATE)
   }
 
-  _destroy () {
+  _destroy() {
     this._isShakaReadyState = false
     Log.debug('shaka was destroyed')
   }

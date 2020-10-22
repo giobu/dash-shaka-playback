@@ -1,18 +1,18 @@
 const path = require('path')
 const webpack = require('webpack')
-const UglifyJsPlugin = require("uglifyjs-webpack-plugin")
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
 var NPM_RUN = process.env.npm_lifecycle_event
 
 const externals = () => {
   // By default, only Clappr is defined as external library
   return {
-    clappr: {
+    /*clappr: {
       amd: 'clappr',
       commonjs: 'clappr',
       commonjs2: 'clappr',
       root: 'Clappr'
-    }
+    }*/
   }
 }
 
@@ -53,8 +53,9 @@ const webpackConfig = (config) => {
   }
 }
 
-var configurations = []
+const configurations = []
 
+let customExt
 if (NPM_RUN === 'build' || NPM_RUN === 'start') {
   // Unminified bundle with shaka-player
   configurations.push(webpackConfig({
@@ -65,7 +66,7 @@ if (NPM_RUN === 'build' || NPM_RUN === 'start') {
   }))
 
   // Unminified bundle without shaka-player
-  var customExt = externals()
+  customExt = externals()
   customExt['shaka-player'] = 'shaka'
   configurations.push(webpackConfig({
     filename: 'dash-shaka-playback.external.js',
@@ -91,7 +92,7 @@ if (NPM_RUN === 'release') {
   }))
 
   // Minified bundle without shaka-player
-  var customExt = externals()
+  customExt = externals()
   customExt['shaka-player'] = 'shaka'
   configurations.push(webpackConfig({
     filename: 'dash-shaka-playback.external.min.js',
